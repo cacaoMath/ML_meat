@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
         selectBtn = findViewById(R.id.selectImg_btn)
         predictBtn = findViewById(R.id.predict_btn)
         cameraBtn = findViewById(R.id.camera_btn)
-        predictTv = findViewById(R.id.predection_tv)
+        predictTv = findViewById(R.id.prediction_tv)
         imgView = findViewById(R.id.imageView)
 
         //初期画面用
