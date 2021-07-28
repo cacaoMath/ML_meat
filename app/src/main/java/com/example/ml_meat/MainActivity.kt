@@ -6,10 +6,7 @@ import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.example.ml_meat.ml.ModelUnquant
 import org.tensorflow.lite.DataType
@@ -28,6 +25,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cameraBtn : Button
     private lateinit var predictTv : TextView
     private lateinit var imgView : ImageView
+    private lateinit var recipeSearchBtn : ImageButton
     private lateinit var image : Bitmap
     private lateinit var results : List<String>
 
@@ -41,6 +39,10 @@ class MainActivity : AppCompatActivity() {
         cameraBtn = findViewById(R.id.camera_btn)
         predictTv = findViewById(R.id.prediction_tv)
         imgView = findViewById(R.id.imageView)
+        recipeSearchBtn = findViewById(R.id.recipeSearch_btn)
+
+        //推定結果の肉カテゴリ
+        var meatCategory = ""
 
         //初期画面用
         val bmp = BitmapFactory.decodeResource(resources, R.drawable.meat)
@@ -81,6 +83,7 @@ class MainActivity : AppCompatActivity() {
             val tensorImg = TensorImage(DataType.FLOAT32)
             tensorImg.load(image)
             val byteBuffer : ByteBuffer = tensorImg.buffer
+            Log.d(TAG,"ByteBuffer : ${byteBuffer}")
             inputFeature0.loadBuffer(byteBuffer)
 
             // Runs model inference and gets result.
@@ -90,12 +93,23 @@ class MainActivity : AppCompatActivity() {
             val resultLabel = TensorLabel(results, outputFeature0)
 
             //結果の表示
-            predictTv.text = resultLabel.mapWithFloatValue.toList().maxByOrNull { it.second }.toString()
+            val predictElm = resultLabel.mapWithFloatValue.toList().maxByOrNull { it.second }
+            if (predictElm != null) {
+                meatCategory = predictElm.first
+                predictTv.text = "${predictElm.first} : " + "%.2f".format(predictElm.second)
+            }
             Log.d(TAG,resultLabel.mapWithFloatValue.toList().toString())
             // Releases model resources if no longer used.
             model.close()
         }
 
+        recipeSearchBtn.setOnClickListener{
+            val menuListIntent = Intent(this, MenuListActivity::class.java)
+
+            menuListIntent.putExtra("MEAT_CATEGORY",meatCategory)
+            //画面遷移を開始
+            startActivity(menuListIntent)
+        }
     }
 
     companion object {

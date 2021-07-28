@@ -7,6 +7,12 @@ android {
     compileSdkVersion 30
     buildToolsVersion "30.0.3"
 
+    testOptions{
+        unitTests{
+            includeAndroidResources = true
+        }
+    }
+
     defaultConfig {
         applicationId "com.example.ml_meat"
         minSdkVersion 24
@@ -48,6 +54,7 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.2.0"
+    testImplementation 'org.robolectric:robolectric:4.4'
 
     implementation 'org.tensorflow:tensorflow-lite:0.0.0-nightly-SNAPSHOT'
     // The GPU delegate library is optional. Depend on it as needed.
