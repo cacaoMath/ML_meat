@@ -10,11 +10,11 @@ import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.lang.StringBuilder
-import java.net.HttpURLConnection
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 
 class MenuListActivity : AppCompatActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_menu_list)
@@ -25,7 +25,8 @@ class MenuListActivity : AppCompatActivity() {
 //        listviewMenu.onItemClickListener = ListItemClickListener()
 
         val receiver = RecipeReceiver()
-        receiver.execute("10-275-1483")
+        val meatCategory = intent.getStringExtra("MEAT_CATEGORY")
+        receiver.execute(meatCategory)
     }
 
     //楽天のapi用
@@ -69,10 +70,25 @@ class MenuListActivity : AppCompatActivity() {
         override fun onPostExecute(result: String?) {
             val rootJSON = JSONObject(result)
             val resultJSON = rootJSON.getJSONArray("result")
-            val result1 = resultJSON.getJSONObject(0)
-            val recipeDescription = result1.getString("recipeDescription")
-            val test_tv = findViewById<TextView>(R.id.test_tv)
-            test_tv.text = recipeDescription
+
+            val listviewMenu = findViewById<ListView>(R.id.recipe_lv)
+            val recipeList: MutableList<MutableMap<String, String>> = mutableListOf()
+
+            for(i in 0 until resultJSON.length()){
+                val oneRecipeInfo = resultJSON.getJSONObject(i)
+                val recipeTitle = oneRecipeInfo.getString("recipeTitle")
+                val recipeDescription = oneRecipeInfo.getString("recipeDescription")
+
+                val info = mutableMapOf("recipeTitle" to recipeTitle, "recipeDescription" to recipeDescription)
+                recipeList.add(info)
+            }
+
+            val from = arrayOf("recipeTitle", "recipeDescription")
+            val to = intArrayOf(android.R.id.text1, android.R.id.text2)
+
+            val adapter = SimpleAdapter(applicationContext, recipeList,
+                android.R.layout.simple_list_item_2, from, to)
+            listviewMenu.adapter = adapter
         }
     }
 
@@ -91,14 +107,3 @@ class MenuListActivity : AppCompatActivity() {
 
 
 
-enum class MeatCategory(val categoryId : String){
-    GyuTongue("10-275-1483"),
-    GyuHarami("10-275-822"),
-    GyuRose("10-275-822"),
-    GyuBara("10-275-2134"),
-    Sasami("10-277-519"),
-    Seseri("10-277-834"),
-    SunaGimo("10-277-1489"),
-    ToriLever("10-277-1490"),
-    ToriMomo("10-277-518")
-}

@@ -106,12 +106,58 @@ class MainActivity : AppCompatActivity() {
         recipeSearchBtn.setOnClickListener{
             val menuListIntent = Intent(this, MenuListActivity::class.java)
 
-            menuListIntent.putExtra("MEAT_CATEGORY",meatCategory)
+            menuListIntent.putExtra("MEAT_CATEGORY",returnCategoryStr(meatCategory))
             //画面遷移を開始
             startActivity(menuListIntent)
         }
     }
 
+    private fun returnCategoryStr(category: String): String{
+        val id = when(category){
+            "牛ハラミ"->{
+                MeatCategory.GyuHarami.categoryId
+            }
+            "牛ロース"->{
+                MeatCategory.GyuRose.categoryId
+            }
+            "牛タン"->{
+                MeatCategory.GyuTongue.categoryId
+            }
+            "三角バラ"->{
+                MeatCategory.GyuBara.categoryId
+            }
+            "ササミ"->{
+                MeatCategory.Sasami.categoryId
+            }
+            "セセリ"->{
+                MeatCategory.Seseri.categoryId
+            }
+            "砂ぎも"->{
+                MeatCategory.SunaGimo.categoryId
+            }
+            "鳥レバー"->{
+                MeatCategory.ToriLever.categoryId
+            }
+            "鳥モモ"->{
+                MeatCategory.ToriMomo.categoryId
+            }
+            else -> "10-275-1483"
+        }
+
+        return id
+    }
+
+    enum class MeatCategory(val categoryId : String){
+        GyuTongue("10-275-1483"),
+        GyuHarami("10-275-822"),
+        GyuRose("10-275-822"),
+        GyuBara("10-275-2134"),
+        Sasami("10-277-519"),
+        Seseri("10-277-834"),
+        SunaGimo("10-277-1489"),
+        ToriLever("10-277-1490"),
+        ToriMomo("10-277-518")
+    }
     companion object {
         private const val READ_REQUEST_CODE: Int = 42
         private const val RESULT_CAMERA: Int = 55
