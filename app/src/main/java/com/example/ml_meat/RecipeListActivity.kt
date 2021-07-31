@@ -84,10 +84,8 @@ class MenuListActivity : AppCompatActivity() {
             }
 
             val from = arrayOf("recipeTitle", "recipeDescription")
-            val to = intArrayOf(android.R.id.text1, android.R.id.text2)
 
-            val adapter = SimpleAdapter(applicationContext, recipeList,
-                android.R.layout.simple_list_item_2, from, to)
+            val adapter = RecipeListAdapter(applicationContext, recipeList, from)
             listviewMenu.adapter = adapter
         }
     }
