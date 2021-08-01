@@ -60,4 +60,5 @@ dependencies {
     // The GPU delegate library is optional. Depend on it as needed.
     implementation 'org.tensorflow:tensorflow-lite-gpu:0.0.0-nightly-SNAPSHOT'
     implementation 'org.tensorflow:tensorflow-lite-support:0.0.0-nightly-SNAPSHOT'
+    implementation 'com.github.bumptech.glide:glide:4.11.0'
 }

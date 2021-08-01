@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity() {
             val tensorImg = TensorImage(DataType.FLOAT32)
             tensorImg.load(image)
             val byteBuffer : ByteBuffer = tensorImg.buffer
-            Log.d(TAG,"ByteBuffer : ${byteBuffer}")
+            Log.d(TAG,"ByteBuffer : $byteBuffer")
             inputFeature0.loadBuffer(byteBuffer)
 
             // Runs model inference and gets result.
@@ -93,10 +93,10 @@ class MainActivity : AppCompatActivity() {
             val resultLabel = TensorLabel(results, outputFeature0)
 
             //結果の表示
-            val predictElm = resultLabel.mapWithFloatValue.toList().maxByOrNull { it.second }
+            val predictElm = resultLabel.mapWithFloatValue.toList().sortedBy { it.second }.reversed()
             if (predictElm != null) {
-                meatCategory = predictElm.first
-                predictTv.text = "${predictElm.first} : " + "%.2f".format(predictElm.second)
+                meatCategory = predictElm[0].first
+                predictTv.text = "${predictElm[0].first} : " + "%.2f".format(predictElm[0].second)+"\n"+"${predictElm[1].first} : " + "%.2f".format(predictElm[1].second)
             }
             Log.d(TAG,resultLabel.mapWithFloatValue.toList().toString())
             // Releases model resources if no longer used.
@@ -112,39 +112,38 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun returnCategoryStr(category: String): String{
-        val id = when(category){
-            "牛ハラミ"->{
+    private fun returnCategoryStr(category: String): String {
+
+        return when (category) {
+            "牛ハラミ" -> {
                 MeatCategory.GyuHarami.categoryId
             }
-            "牛ロース"->{
+            "牛ロース" -> {
                 MeatCategory.GyuRose.categoryId
             }
-            "牛タン"->{
+            "牛タン" -> {
                 MeatCategory.GyuTongue.categoryId
             }
-            "三角バラ"->{
+            "三角バラ" -> {
                 MeatCategory.GyuBara.categoryId
             }
-            "ササミ"->{
+            "ササミ" -> {
                 MeatCategory.Sasami.categoryId
             }
-            "セセリ"->{
+            "セセリ" -> {
                 MeatCategory.Seseri.categoryId
             }
-            "砂ぎも"->{
+            "砂ぎも" -> {
                 MeatCategory.SunaGimo.categoryId
             }
-            "鳥レバー"->{
+            "鳥レバー" -> {
                 MeatCategory.ToriLever.categoryId
             }
-            "鳥モモ"->{
+            "鳥モモ" -> {
                 MeatCategory.ToriMomo.categoryId
             }
             else -> "10-275-1483"
         }
-
-        return id
     }
 
     enum class MeatCategory(val categoryId : String){

@@ -14,15 +14,21 @@ import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 
 class MenuListActivity : AppCompatActivity() {
+    private lateinit var listviewMenu : ListView
+    private val recipeList: MutableList<MutableMap<String, String>> = mutableListOf()
+    private lateinit var adapter: RecipeListAdapter
+    private val from = arrayOf("recipeTitle", "recipeDescription", "recipeImg")
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_menu_list)
 
-//        val listviewMenu = findViewById<ListView>(R.id.ListViewMenu)
-//        var menuList = mutableListOf("abc","def","cnn")
-//        listviewMenu.adapter = ArrayAdapter(applicationContext,android.R.layout.simple_list_item_1, menuList)
-//        listviewMenu.onItemClickListener = ListItemClickListener()
+        listviewMenu = findViewById(R.id.recipe_lv)
+        adapter = RecipeListAdapter(applicationContext, recipeList, from)
+        listviewMenu.onItemClickListener = ListItemClickListener()
+
+
 
         val receiver = RecipeReceiver()
         val meatCategory = intent.getStringExtra("MEAT_CATEGORY")
@@ -41,15 +47,15 @@ class MenuListActivity : AppCompatActivity() {
     //https://webservice.rakuten.co.jp/api/recipecategoryranking/
     private inner class ListItemClickListener : AdapterView.OnItemClickListener{
         override fun onItemClick(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-            val item = parent?.getItemAtPosition(position) as String
+//            val item = parent?.getItemAtPosition(position) as String
+//
+//            val show = "this is $item"
 
-            val show = "this is $item"
-
-            Toast.makeText(applicationContext, show, Toast.LENGTH_LONG).show()
+            Toast.makeText(applicationContext, "$position", Toast.LENGTH_LONG).show()
         }
 
     }
-    private inner class RecipeReceiver(): AsyncTask<String, String, String>(){
+    private inner class RecipeReceiver: AsyncTask<String, String, String>(){
         override fun doInBackground(vararg params: String?): String {
             val category = params[0]
             val urlStr = "https://app.rakuten.co.jp/services/api/Recipe/CategoryRanking/20170426?applicationId=1079183511722986325&categoryId=${category}"
@@ -64,29 +70,31 @@ class MenuListActivity : AppCompatActivity() {
             con.disconnect()
             stream.close()
 
-            return result;
+            return result
         }
 
         override fun onPostExecute(result: String?) {
             val rootJSON = JSONObject(result)
             val resultJSON = rootJSON.getJSONArray("result")
 
-            val listviewMenu = findViewById<ListView>(R.id.recipe_lv)
-            val recipeList: MutableList<MutableMap<String, String>> = mutableListOf()
-
             for(i in 0 until resultJSON.length()){
                 val oneRecipeInfo = resultJSON.getJSONObject(i)
                 val recipeTitle = oneRecipeInfo.getString("recipeTitle")
                 val recipeDescription = oneRecipeInfo.getString("recipeDescription")
+                val recipeImg = oneRecipeInfo.getString("smallImageUrl")
+                val recipeUrl = oneRecipeInfo.getString("recipeUrl")
 
-                val info = mutableMapOf("recipeTitle" to recipeTitle, "recipeDescription" to recipeDescription)
+                val info = mutableMapOf("recipeTitle" to recipeTitle,
+                    "recipeDescription" to recipeDescription,
+                    "recipeImg" to recipeImg,
+                    "recipeUrl" to recipeUrl)
                 recipeList.add(info)
             }
 
-            val from = arrayOf("recipeTitle", "recipeDescription")
 
-            val adapter = RecipeListAdapter(applicationContext, recipeList, from)
+            adapter = RecipeListAdapter(applicationContext, recipeList, from)
             listviewMenu.adapter = adapter
+
         }
     }
 
