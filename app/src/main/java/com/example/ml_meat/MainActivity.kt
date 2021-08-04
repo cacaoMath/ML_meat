@@ -20,39 +20,33 @@ import java.nio.ByteBuffer
 
 class MainActivity : AppCompatActivity() {
     private val TAG = this::class.java.simpleName
-    private lateinit var selectBtn :Button
-    private lateinit var predictBtn : Button
-    private lateinit var cameraBtn : Button
-    private lateinit var predictTv : TextView
-    private lateinit var imgView : ImageView
-    private lateinit var recipeSearchBtn : ImageButton
-    private lateinit var image : Bitmap
-    private lateinit var results : List<String>
+    private lateinit var predictResultTv : TextView
+    private lateinit var targetImgView : ImageView
+    private lateinit var targetImage : Bitmap
+    private lateinit var meatLabelList : List<String>
+
+    private var resultMeatCategory = ""//推定結果の肉カテゴリを入れる
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         //ボタンなどの初期化
-        selectBtn = findViewById(R.id.selectImg_btn)
-        predictBtn = findViewById(R.id.predict_btn)
-        cameraBtn = findViewById(R.id.camera_btn)
-        predictTv = findViewById(R.id.prediction_tv)
-        imgView = findViewById(R.id.imageView)
-        recipeSearchBtn = findViewById(R.id.recipeSearch_btn)
-
-        //推定結果の肉カテゴリ
-        var meatCategory = ""
+        val selectBtn = findViewById<ImageButton>(R.id.selectImg_btn)
+        val cameraBtn = findViewById<ImageButton>(R.id.camera_btn)
+        val recipeSearchBtn = findViewById<ImageButton>(R.id.recipeSearch_btn)
+        predictResultTv = findViewById(R.id.prediction_tv)
+        targetImgView = findViewById(R.id.imageView)
 
         //初期画面用
         val bmp = BitmapFactory.decodeResource(resources, R.drawable.meat)
-        image = Bitmap.createScaledBitmap(bmp, 224, 224,true)
-        imgView.setImageBitmap(image)
-        imgView.setImageResource(R.drawable.meat)
+        targetImage = Bitmap.createScaledBitmap(bmp, 224, 224,true)
+        targetImgView.setImageBitmap(targetImage)
+        targetImgView.setImageResource(R.drawable.meat)
 
         //推論後の正解ラベルの読みこみ
         try {
-            results = FileUtil.loadLabels(this, "labels.txt")
+            meatLabelList = FileUtil.loadLabels(this, "labels.txt")
         }catch (e:IOException){
             Log.d(TAG,"Reading label data is error")
         }
@@ -72,44 +66,44 @@ class MainActivity : AppCompatActivity() {
             startActivityForResult(intent, RESULT_CAMERA)
         }
 
-        //表示された画像から推定をする
-        predictBtn.setOnClickListener {
-            //以下tensorflowLiteによる推論
-            val model = ModelUnquant.newInstance(this)
-
-            // Creates inputs for reference.
-            val inputFeature0 = TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
-
-            val tensorImg = TensorImage(DataType.FLOAT32)
-            tensorImg.load(image)
-            val byteBuffer : ByteBuffer = tensorImg.buffer
-            Log.d(TAG,"ByteBuffer : $byteBuffer")
-            inputFeature0.loadBuffer(byteBuffer)
-
-            // Runs model inference and gets result.
-            val outputs = model.process(inputFeature0)
-            val outputFeature0 = outputs.outputFeature0AsTensorBuffer
-
-            val resultLabel = TensorLabel(results, outputFeature0)
-
-            //結果の表示
-            val predictElm = resultLabel.mapWithFloatValue.toList().sortedBy { it.second }.reversed()
-            if (predictElm != null) {
-                meatCategory = predictElm[0].first
-                predictTv.text = "${predictElm[0].first} : " + "%.2f".format(predictElm[0].second)+"\n"+"${predictElm[1].first} : " + "%.2f".format(predictElm[1].second)
-            }
-            Log.d(TAG,resultLabel.mapWithFloatValue.toList().toString())
-            // Releases model resources if no longer used.
-            model.close()
-        }
 
         recipeSearchBtn.setOnClickListener{
             val menuListIntent = Intent(this, MenuListActivity::class.java)
 
-            menuListIntent.putExtra("MEAT_CATEGORY",returnCategoryStr(meatCategory))
+            menuListIntent.putExtra("MEAT_CATEGORY",returnCategoryStr(resultMeatCategory))
             //画面遷移を開始
             startActivity(menuListIntent)
         }
+    }
+
+    private fun meatPrediction(image : Bitmap){
+        //以下tensorflowLiteによる推論
+        val model = ModelUnquant.newInstance(this)
+
+        // Creates inputs for reference.
+        val inputFeature0 = TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
+
+        val tensorImg = TensorImage(DataType.FLOAT32)
+        tensorImg.load(image)
+        val byteBuffer : ByteBuffer = tensorImg.buffer
+        Log.d(TAG,"ByteBuffer : $byteBuffer")
+        inputFeature0.loadBuffer(byteBuffer)
+
+        // Runs model inference and gets result.
+        val outputs = model.process(inputFeature0)
+        val outputFeature0 = outputs.outputFeature0AsTensorBuffer
+
+        val resultLabel = TensorLabel(meatLabelList, outputFeature0)
+
+        //結果を推定のリスト(確率が高いものがはじめに来るようにソート)
+        val predictElm = resultLabel.mapWithFloatValue.toList().sortedBy { it.second }.reversed()
+        if (predictElm != null) {
+            resultMeatCategory = predictElm[0].first
+            predictResultTv.text = "${predictElm[0].first} : " + "%.2f".format(predictElm[0].second)+"\n"+"${predictElm[1].first} : " + "%.2f".format(predictElm[1].second)
+        }
+        Log.d(TAG,resultLabel.mapWithFloatValue.toList().toString())
+        // Releases model resources if no longer used.
+        model.close()
     }
 
     private fun returnCategoryStr(category: String): String {
@@ -172,9 +166,10 @@ class MainActivity : AppCompatActivity() {
                     Log.d(TAG,"Camera app was Error or Cancel")
                     return
                 }else{
-                    val bitmap = resultData?.extras?.get("data")
-                    image = Bitmap.createScaledBitmap(bitmap as Bitmap, 224, 224,true)
-                    imgView.setImageBitmap(image)
+                    val bitmap = resultData.extras?.get("data")
+                    val image = Bitmap.createScaledBitmap(bitmap as Bitmap, 224, 224,true)
+                    targetImgView.setImageBitmap(image)
+                    meatPrediction(image)//画像推定
                 }
                 Toast.makeText(this, "とれたよ！！", Toast.LENGTH_LONG).show()
             }
@@ -184,9 +179,10 @@ class MainActivity : AppCompatActivity() {
                 try {
                     resultData?.data?.also { uri ->
                         val inputStream = contentResolver?.openInputStream(uri)
-                        val image2 = BitmapFactory.decodeStream(inputStream)
-                        image = Bitmap.createScaledBitmap(image2, 224, 224,true)
-                        imgView.setImageBitmap(image)
+                        val imageTmp = BitmapFactory.decodeStream(inputStream)
+                        val image = Bitmap.createScaledBitmap(imageTmp, 224, 224,true)
+                        targetImgView.setImageBitmap(image)
+                        meatPrediction(image)//画像推定
                     }
                     Toast.makeText(this, "とれたよ！！", Toast.LENGTH_LONG).show()
                 } catch (e: Exception) {
