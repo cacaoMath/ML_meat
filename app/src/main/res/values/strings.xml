@@ -3,4 +3,5 @@
     <string name="selectImg_button">Select Image</string>
     <string name="camera_button">Take Picture</string>
     <string name="prediction">Prediction</string>
+    <string name="main_menu_word">Have a good meat!</string>
 </resources>

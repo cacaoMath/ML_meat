@@ -9,7 +9,7 @@ android {
 
     testOptions{
         unitTests{
-            includeAndroidResources = true
+//            includeAndroidResources = true
         }
     }
 
@@ -41,6 +41,10 @@ android {
     }
 }
 
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+
 dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
@@ -56,9 +60,11 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.2.0"
     testImplementation 'org.robolectric:robolectric:4.4'
 
-    implementation 'org.tensorflow:tensorflow-lite:0.0.0-nightly-SNAPSHOT'
+    implementation 'org.tensorflow:tensorflow-lite:2.2.0'
     // The GPU delegate library is optional. Depend on it as needed.
     implementation 'org.tensorflow:tensorflow-lite-gpu:0.0.0-nightly-SNAPSHOT'
-    implementation 'org.tensorflow:tensorflow-lite-support:0.0.0-nightly-SNAPSHOT'
+    implementation 'org.tensorflow:tensorflow-lite-support:0.1.0-rc1'
     implementation 'com.github.bumptech.glide:glide:4.11.0'
+    //グラフ関係
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
 }

@@ -3,12 +3,17 @@ package com.example.ml_meat
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.example.ml_meat.ml.ModelUnquant
+import com.github.mikephil.charting.charts.PieChart
+import com.github.mikephil.charting.data.PieData
+import com.github.mikephil.charting.data.PieDataSet
+import com.github.mikephil.charting.data.PieEntry
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.image.TensorImage
@@ -16,6 +21,7 @@ import org.tensorflow.lite.support.label.TensorLabel
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 import java.io.IOException
 import java.nio.ByteBuffer
+import kotlin.math.roundToInt
 
 
 class MainActivity : AppCompatActivity() {
@@ -24,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var targetImgView : ImageView
     private lateinit var targetImage : Bitmap
     private lateinit var meatLabelList : List<String>
+    private lateinit var pieChart : PieChart
 
     private var resultMeatCategory = ""//推定結果の肉カテゴリを入れる
 
@@ -37,6 +44,7 @@ class MainActivity : AppCompatActivity() {
         val recipeSearchBtn = findViewById<ImageButton>(R.id.recipeSearch_btn)
         predictResultTv = findViewById(R.id.prediction_tv)
         targetImgView = findViewById(R.id.imageView)
+        pieChart = findViewById(R.id.pieChart)
 
         //初期画面用
         val bmp = BitmapFactory.decodeResource(resources, R.drawable.meat)
@@ -66,8 +74,12 @@ class MainActivity : AppCompatActivity() {
             startActivityForResult(intent, RESULT_CAMERA)
         }
 
-
+        //apiから肉にあったメニューをとってくる
         recipeSearchBtn.setOnClickListener{
+            if (resultMeatCategory.isBlank()){
+                Toast.makeText(applicationContext, "写真をとるか選んでください", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             val menuListIntent = Intent(this, MenuListActivity::class.java)
 
             menuListIntent.putExtra("MEAT_CATEGORY",returnCategoryStr(resultMeatCategory))
@@ -96,10 +108,29 @@ class MainActivity : AppCompatActivity() {
         val resultLabel = TensorLabel(meatLabelList, outputFeature0)
 
         //結果を推定のリスト(確率が高いものがはじめに来るようにソート)
-        val predictElm = resultLabel.mapWithFloatValue.toList().sortedBy { it.second }.reversed()
-        if (predictElm != null) {
-            resultMeatCategory = predictElm[0].first
-            predictResultTv.text = "${predictElm[0].first} : " + "%.2f".format(predictElm[0].second)+"\n"+"${predictElm[1].first} : " + "%.2f".format(predictElm[1].second)
+        val predictElmList = resultLabel.mapWithFloatValue.toList().sortedBy { it.second }.reversed()
+        if (predictElmList != null) {
+            resultMeatCategory = predictElmList[0].first
+
+            if(predictElmList[0].second > 0.6f)
+                predictResultTv.text = "${predictElmList[0].first}です"
+            else
+                predictResultTv.text = "${predictElmList[0].first}かも"
+
+            val entries : ArrayList<PieEntry> = arrayListOf()
+
+            for (elm in predictElmList){
+                val elmValue = (elm.second * 1000).roundToInt() /10f
+                if(elmValue > 1f && entries.size < 5)
+                    entries.add(PieEntry(elmValue, elm.first))
+            }
+            val set = PieDataSet(entries, "meat")
+            set.colors = listOf(Color.rgb(102,139,138), Color.rgb(159,176,131),
+                Color.rgb(249, 238,211), Color.rgb(164, 124,100) )
+            val data = PieData(set)
+            pieChart.data = data
+            pieChart.description.text = "画像がどの肉に近いかの確率"
+            pieChart.invalidate()
         }
         Log.d(TAG,resultLabel.mapWithFloatValue.toList().toString())
         // Releases model resources if no longer used.
