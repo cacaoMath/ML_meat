@@ -201,8 +201,9 @@ class MainActivity : AppCompatActivity() {
                     val image = Bitmap.createScaledBitmap(bitmap as Bitmap, 224, 224,true)
                     targetImgView.setImageBitmap(image)
                     meatPrediction(image)//画像推定
+                    Toast.makeText(this, "とれたよ！！", Toast.LENGTH_LONG).show()
+
                 }
-                Toast.makeText(this, "とれたよ！！", Toast.LENGTH_LONG).show()
             }
 
             // ギャラリーから
@@ -214,8 +215,9 @@ class MainActivity : AppCompatActivity() {
                         val image = Bitmap.createScaledBitmap(imageTmp, 224, 224,true)
                         targetImgView.setImageBitmap(image)
                         meatPrediction(image)//画像推定
+                        Toast.makeText(this, "とれたよ！！", Toast.LENGTH_LONG).show()
+
                     }
-                    Toast.makeText(this, "とれたよ！！", Toast.LENGTH_LONG).show()
                 } catch (e: Exception) {
                     Toast.makeText(this, "エラーが発生しました", Toast.LENGTH_LONG).show()
                 }
