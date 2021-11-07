@@ -5,6 +5,10 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import android.widget.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStream
@@ -13,7 +17,7 @@ import java.lang.StringBuilder
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 
-class MenuListActivity : AppCompatActivity() {
+class MenuListActivity : ScopedAppActivity() {
     private lateinit var listviewMenu : ListView
     private val recipeList: MutableList<MutableMap<String, String>> = mutableListOf()
     private lateinit var adapter: RecipeListAdapter
@@ -29,10 +33,46 @@ class MenuListActivity : AppCompatActivity() {
         listviewMenu.onItemClickListener = ListItemClickListener()
 
 
+        launch {
+            val bgTask = async (Dispatchers.IO){
+                val category = intent.getStringExtra("MEAT_CATEGORY")
+                val urlStr = "https://app.rakuten.co.jp/services/api/Recipe/CategoryRanking/20170426?applicationId=1079183511722986325&categoryId=${category}"
 
-        val receiver = RecipeReceiver()
-        val meatCategory = intent.getStringExtra("MEAT_CATEGORY")
-        receiver.execute(meatCategory)
+                val url = URL(urlStr)
+                val con = url.openConnection() as HttpsURLConnection
+                con.requestMethod = "GET"
+                con.connect()
+
+                val stream = con.inputStream
+                val result = is2String(stream)
+                con.disconnect()
+                stream.close()
+
+                result
+            }
+            withContext(Dispatchers.Main){
+                val rootJSON = JSONObject(bgTask.await())
+                val resultJSON = rootJSON.getJSONArray("result")
+
+                for(i in 0 until resultJSON.length()){
+                    val oneRecipeInfo = resultJSON.getJSONObject(i)
+                    val recipeTitle = oneRecipeInfo.getString("recipeTitle")
+                    val recipeDescription = oneRecipeInfo.getString("recipeDescription")
+                    val recipeImg = oneRecipeInfo.getString("smallImageUrl")
+                    val recipeUrl = oneRecipeInfo.getString("recipeUrl")
+
+                    val info = mutableMapOf("recipeTitle" to recipeTitle,
+                        "recipeDescription" to recipeDescription,
+                        "recipeImg" to recipeImg,
+                        "recipeUrl" to recipeUrl)
+                    recipeList.add(info)
+                }
+
+
+                adapter = RecipeListAdapter(applicationContext, recipeList, from)
+                listviewMenu.adapter = adapter
+            }
+        }
     }
 
     //楽天のapi用
@@ -54,48 +94,6 @@ class MenuListActivity : AppCompatActivity() {
             Toast.makeText(applicationContext, "$position", Toast.LENGTH_LONG).show()
         }
 
-    }
-    private inner class RecipeReceiver: AsyncTask<String, String, String>(){
-        override fun doInBackground(vararg params: String?): String {
-            val category = params[0]
-            val urlStr = "https://app.rakuten.co.jp/services/api/Recipe/CategoryRanking/20170426?applicationId=1079183511722986325&categoryId=${category}"
-
-            val url = URL(urlStr)
-            val con = url.openConnection() as HttpsURLConnection
-            con.requestMethod = "GET"
-            con.connect()
-
-            val stream = con.inputStream
-            val result = is2String(stream)
-            con.disconnect()
-            stream.close()
-
-            return result
-        }
-
-        override fun onPostExecute(result: String?) {
-            val rootJSON = JSONObject(result)
-            val resultJSON = rootJSON.getJSONArray("result")
-
-            for(i in 0 until resultJSON.length()){
-                val oneRecipeInfo = resultJSON.getJSONObject(i)
-                val recipeTitle = oneRecipeInfo.getString("recipeTitle")
-                val recipeDescription = oneRecipeInfo.getString("recipeDescription")
-                val recipeImg = oneRecipeInfo.getString("smallImageUrl")
-                val recipeUrl = oneRecipeInfo.getString("recipeUrl")
-
-                val info = mutableMapOf("recipeTitle" to recipeTitle,
-                    "recipeDescription" to recipeDescription,
-                    "recipeImg" to recipeImg,
-                    "recipeUrl" to recipeUrl)
-                recipeList.add(info)
-            }
-
-
-            adapter = RecipeListAdapter(applicationContext, recipeList, from)
-            listviewMenu.adapter = adapter
-
-        }
     }
 
     private fun is2String(stream: InputStream): String{
